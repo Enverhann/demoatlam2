@@ -1,6 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
-using UnityStandardAssets.CrossPlatformInput;
 
 public class PlayerController : MonoBehaviour
 {
@@ -13,7 +11,22 @@ public class PlayerController : MonoBehaviour
     private BoxCollider2D _boxCollider2d;
     public bool facingRight = true;
     public bool canMove = true;
-    public Canvas canvas;
+    public GameObject progress;
+    public Material material;
+    private float _fade = 0;
+    float lerpSpeed = 1f;
+    private float timer;
+    public bool isStarting = true;
+
+    public float sensitivityMultiplier;
+    public float deltaThreshold;
+    Vector2 firstTouchPosition;
+    float finalTouchX;
+    float finalTouchY;
+    Vector2 currentTouchPosition;
+    public float minXPos;
+    public float maxXPos;
+    public Vector2 touchDelta;
     void Awake()
     {
         _rb2d = GetComponent<Rigidbody2D>();
@@ -22,52 +35,22 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (CrossPlatformInputManager.GetButtonDown("Jump") && IsGrounded() && canJump && canMove)
+        material.SetFloat("_Fade", _fade);
+        if (isStarting)
         {
-            _rb2d.velocity = new Vector2(0.0f, _rb2d.velocity.y);
+            timer = Mathf.Clamp01(timer + Time.deltaTime * lerpSpeed);
         }
-        if (CrossPlatformInputManager.GetButtonUp("Jump") && canMove)
+        _fade = Mathf.Lerp(0, 1, timer);
+
+        if (canMove && IsGrounded())
         {
-            if (facingRight && IsGrounded())
-            {
-                float tempx = walkSpeed;
-                float tempy = jumpValue;
-                _rb2d.velocity = new Vector2(tempx, tempy);
-                Invoke("ResetJump", 0.05f);
-            }
-            else if (!facingRight && IsGrounded() && canMove)
-            {
-                float tempx = -walkSpeed;
-                float tempy = jumpValue;
-                _rb2d.velocity = new Vector2(tempx, tempy);
-                Invoke("ResetJump", 0.05f);
-            }
-            canJump = true;
+            SwipeMovement();
         }
     }
 
     private void FixedUpdate()
     {
-        horizontalInput=CrossPlatformInputManager.GetAxis("Horizontal");
-        if (horizontalInput > 0 && !facingRight && canMove)
-        {
-            Flip();
-        }
-        else if (horizontalInput < 0 && facingRight && canMove)
-        {
-            Flip();
-        }
-
-        if (jumpValue == 0.0f && IsGrounded() && canMove)
-        {
-            _rb2d.velocity = new Vector2(horizontalInput * walkSpeed, _rb2d.velocity.y);
-        }
-
-        if (CrossPlatformInputManager.GetButton("Jump") && IsGrounded() && canJump && canMove)
-        {
-            jumpValue += 0.8f;
-        }
-        if (jumpValue >= 42f && !facingRight && IsGrounded() && canMove)
+        if (jumpValue >= 48f && !facingRight && IsGrounded() && canMove)
         {
             float tempx = horizontalInput - walkSpeed;
             float tempy = jumpValue;
@@ -75,8 +58,7 @@ public class PlayerController : MonoBehaviour
             jumpValue = 0;
             Invoke("ResetJump", 0.01f);
         }
-
-        else if (jumpValue >= 42f && facingRight && IsGrounded() && canMove)
+        else if (jumpValue >= 48f && facingRight && IsGrounded() && canMove)
         {
             float tempx = walkSpeed;
             float tempy = jumpValue;
@@ -125,10 +107,85 @@ public class PlayerController : MonoBehaviour
     {
         facingRight = !facingRight;
         Vector3 theScale = transform.localScale;
-        Vector3 canvasScale = canvas.transform.localScale;
+        Vector3 canvasScale = progress.transform.localScale;
         theScale.x *= -1;
         canvasScale.x *= -1f;
         transform.localScale = theScale;
-        canvas.transform.localScale = canvasScale;
+        progress.transform.localScale = canvasScale;
+    }
+    void ResetValues()
+    {
+        _rb2d.velocity = new Vector2(0, 0);
+        firstTouchPosition = Vector2.zero;
+        finalTouchX = 0f;
+        finalTouchY = 0;
+        currentTouchPosition = Vector2.zero;
+        touchDelta = Vector2.zero;
+    }
+
+    void SwipeMovement()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            firstTouchPosition = Input.mousePosition;
+        }
+
+        if (Input.GetMouseButton(0))
+        {
+            currentTouchPosition = Input.mousePosition;
+            touchDelta = (currentTouchPosition - firstTouchPosition);
+
+            if (firstTouchPosition == currentTouchPosition)
+            {
+                _rb2d.velocity = new Vector2(0, 0);
+            }
+            finalTouchX = transform.position.x;
+            finalTouchY = transform.position.y;
+
+            if (Mathf.Abs(touchDelta.x) >= 0 && touchDelta.y == 0 && jumpValue==0)
+            {
+                finalTouchX = (transform.position.x + (touchDelta.x * sensitivityMultiplier));
+            }
+            if (Mathf.Abs(touchDelta.y) >= deltaThreshold && touchDelta.x == 0)
+            {
+                jumpValue += 1.35f;
+            }
+
+            _rb2d.position = new Vector2(finalTouchX, transform.position.y);
+            _rb2d.position = new Vector2(Mathf.Clamp(_rb2d.position.x, minXPos, maxXPos), _rb2d.position.y);
+
+            firstTouchPosition = Input.mousePosition;
+
+            if (touchDelta.x > 0 && !facingRight)
+            {
+                Flip();
+            }else if(touchDelta.x < 0 && facingRight)
+            {
+                Flip();
+            }
+        }
+        
+        if (Input.GetMouseButtonUp(0))
+        {
+            if (facingRight && IsGrounded())
+            {
+                float tempx = walkSpeed;
+                float tempy = jumpValue;
+                _rb2d.velocity = new Vector2(tempx, tempy);
+                Invoke("ResetJump", 0.05f);
+            }
+            else if (!facingRight && IsGrounded() && canMove)
+            {
+                float tempx = -walkSpeed;
+                float tempy = jumpValue;
+                _rb2d.velocity = new Vector2(tempx, tempy);
+                Invoke("ResetJump", 0.05f);
+            }
+            if (canJump && jumpValue==0)
+            {
+                ResetValues();
+            }
+           canJump = true;          
+        }
     }
 }

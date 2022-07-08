@@ -9,7 +9,7 @@ public class PlayerEffectAnimations : MonoBehaviour
     public Button nextLevelButton;
     private float _fillAmount = 0;
     [SerializeField] private Image mask = default;
-    public Canvas canvas;
+    public GameObject progress;
     void Awake()
     {
         _anim = GetComponent<Animator>();
@@ -19,20 +19,18 @@ public class PlayerEffectAnimations : MonoBehaviour
     {
         if (_playerControllerScript.jumpValue == 0)
         {
-            canvas.enabled = false;
+            progress.SetActive(false);
         }
         else
         {
-            canvas.enabled = true;
+            progress.SetActive(true);
         }
-        if (_playerControllerScript.horizontalInput < 0 || _playerControllerScript.horizontalInput > 0)
+        if (_playerControllerScript.touchDelta.x != 0 && _playerControllerScript.touchDelta.y==0)
         {
             _anim.SetBool("isWalking", true);
         }
-        else
-        {
-            _anim.SetBool("isWalking", false);
-        }
+        else { _anim.SetBool("isWalking", false); }
+
         if (_playerControllerScript.canJump == false)
         {
             _anim.SetTrigger("jump");
@@ -57,7 +55,7 @@ public class PlayerEffectAnimations : MonoBehaviour
     }
     public void ProgressBar()
     {
-        _fillAmount = (float)_playerControllerScript.jumpValue / (float)42;
+        _fillAmount = (float)_playerControllerScript.jumpValue / (float)48;
         mask.fillAmount = _fillAmount;
     }
 }
