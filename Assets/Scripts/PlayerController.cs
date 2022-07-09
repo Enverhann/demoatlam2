@@ -50,22 +50,7 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (jumpValue >= 48f && !facingRight && IsGrounded() && canMove)
-        {
-            float tempx = horizontalInput - walkSpeed;
-            float tempy = jumpValue;
-            _rb2d.velocity = new Vector2(tempx, tempy);
-            jumpValue = 0;
-            Invoke("ResetJump", 0.01f);
-        }
-        else if (jumpValue >= 48f && facingRight && IsGrounded() && canMove)
-        {
-            float tempx = walkSpeed;
-            float tempy = jumpValue;
-            _rb2d.velocity = new Vector2(tempx, tempy);
-            jumpValue = 0;
-            Invoke("ResetJump", 0.01f);
-        }
+        FixedJump();
     }
     
     public void ResetJump()
@@ -118,7 +103,7 @@ public class PlayerController : MonoBehaviour
         _rb2d.velocity = new Vector2(0, 0);
         firstTouchPosition = Vector2.zero;
         finalTouchX = 0f;
-        finalTouchY = 0;
+        finalTouchY = 0f;
         currentTouchPosition = Vector2.zero;
         touchDelta = Vector2.zero;
     }
@@ -186,6 +171,25 @@ public class PlayerController : MonoBehaviour
                 ResetValues();
             }
            canJump = true;          
+        }
+    }
+    void FixedJump()
+    {
+        if (jumpValue >= 48f && !facingRight && IsGrounded() && canMove)
+        {
+            float tempx = horizontalInput - walkSpeed;
+            float tempy = jumpValue;
+            _rb2d.velocity = new Vector2(tempx, tempy);
+            jumpValue = 0;
+            Invoke("ResetJump", 0.01f);
+        }
+        else if (jumpValue >= 48f && facingRight && IsGrounded() && canMove)
+        {
+            float tempx = walkSpeed;
+            float tempy = jumpValue;
+            _rb2d.velocity = new Vector2(tempx, tempy);
+            jumpValue = 0;
+            Invoke("ResetJump", 0.01f);
         }
     }
 }
